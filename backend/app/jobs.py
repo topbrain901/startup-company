@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from startup_scraper.enrichment import Enricher, EnrichmentResult
 from startup_scraper.pipeline import ENRICH_TARGETS, collect, run_enrichment, select_enrichment_ids
 from startup_scraper.supabase import SupabaseStore
+from startup_scraper.stage_filter import filter_by_stage_types
 
 from .auth import admin_user
 from .companies import invalidate_facets, valid_id
@@ -173,6 +174,14 @@ class JobManager:
             include_funds=options.get("include_funds", False),
             log=job.log,
         )
+        selected_types = options.get("funding_types") or []
+        if selected_types:
+            before = len(companies)
+            companies, rounds = filter_by_stage_types(companies, rounds, selected_types)
+            job.log(
+                f"Early-stage filter kept {len(companies)} of {before} companies "
+                f"({', '.join(selected_types)})"
+            )
         job.counters["companies_found"] = len(companies)
         job.counters["rounds_found"] = len(rounds)
         if job.cancel.is_set():

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 Role = Literal["admin", "user"]
 EnrichTarget = Literal["never", "missing_website", "missing_founded", "careers_unchecked", "stale", "all"]
+EarlyStageType = Literal["pre-seed", "bootstrapped", "pre-funding", "ideation", "self-funded"]
 
 
 class UserContext(BaseModel):
@@ -113,6 +114,7 @@ class CollectJobInput(BaseModel):
     enrich_after: bool = True
     enrich_limit: int = Field(default=200, ge=0, le=20_000)
     enrich_target: EnrichTarget = "never"
+    funding_types: list[EarlyStageType] = Field(default_factory=list)
 
 
 class EnrichJobInput(BaseModel):

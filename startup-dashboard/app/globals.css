@@ -333,8 +333,8 @@ code { padding: 1px 5px; color: var(--text-2); background: var(--surface-muted);
 
 .table-panel { overflow: hidden; }
 .table-scroll { overflow-x: auto; }
-.company-table { width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 13px; }
-.company-table th { position: sticky; top: 0; padding: 11px 10px; color: var(--muted); background: var(--surface-subtle); border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.company-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 14px; }
+.company-table th { position: sticky; top: 0; padding: 12px 10px; color: var(--muted); background: var(--surface-subtle); border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 750; letter-spacing: .04em; text-align: left; text-transform: uppercase; white-space: nowrap; }
 .company-table td { padding: 11px 10px; vertical-align: middle; border-bottom: 1px solid var(--line-soft); }
 .company-table tbody tr { cursor: pointer; transition: background .12s; }
 .company-table tbody tr:hover { background: var(--row-hover); }
@@ -353,20 +353,20 @@ code { padding: 1px 5px; color: var(--text-2); background: var(--surface-muted);
 .company-cell { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .company-cell > div:last-child { min-width: 0; }
 .company-table .company-logo { flex: none; width: 34px; height: 34px; border-radius: 9px; font-size: 11px; }
-.company-name { display: flex; align-items: center; gap: 6px; max-width: 100%; padding: 0; overflow: hidden; color: var(--ink); background: none; border: 0; cursor: pointer; font-size: 14px; font-weight: 650; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.company-name { display: flex; align-items: center; gap: 6px; max-width: 100%; padding: 0; overflow: hidden; color: var(--ink); background: none; border: 0; cursor: pointer; font-size: 16px; font-weight: 650; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 tr.unviewed .company-name { font-weight: 800; }
 tr.viewed .company-name { color: var(--text-2); font-weight: 600; }
 .unviewed-dot { flex: none; width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
 .company-sub .industry { color: var(--industry-ink); font-weight: 650; }
-.company-sub { display: -webkit-box; max-width: 270px; margin-top: 3px; overflow: hidden; color: var(--text-4); font-size: 12px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+.company-sub { display: -webkit-box; max-width: 320px; margin-top: 4px; overflow: hidden; color: var(--text-3); font-size: 13.5px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .cell-main, .cell-sub { display: block; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cell-main { color: var(--text-2); font-weight: 600; }
-.cell-sub { margin-top: 3px; color: var(--text-4); font-size: 11.5px; }
+.cell-sub { margin-top: 4px; color: var(--text-4); font-size: 13px; line-height: 1.4; }
 .cell-money { font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .estimated { color: var(--amber-ink); font-style: italic; }
 .link-pill { display: inline-flex; align-items: center; gap: 4px; max-width: 145px; overflow: hidden; color: var(--link); font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .link-pill:hover { text-decoration: underline; }
-.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .badge.success { color: var(--success-ink); background: var(--success-bg); border: 1px solid var(--success-border); }
 a.badge.success:hover { background: var(--success-bg-hover); }
 .badge.muted-badge { color: var(--text-4); background: var(--surface-muted); }
@@ -384,7 +384,7 @@ a.badge.success:hover { background: var(--success-bg-hover); }
 .drawer-loading { display: flex; align-items: center; gap: 10px; margin-top: 60px; color: var(--muted); }
 .drawer-head { display: flex; align-items: center; gap: 16px; padding-right: 40px; }
 .drawer-head .detail-logo { flex: none; margin: 0; }
-.drawer-head h2 { margin: 4px 0 0; font-size: 28px; line-height: 1.15; }
+.drawer-head h2 { margin: 4px 0 0; font-size: 31px; line-height: 1.15; }
 .drawer-domain { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; color: var(--link); font-size: 13px; font-weight: 650; text-decoration: none; }
 .drawer-domain.muted { color: var(--text-4); font-weight: 500; }
 .viewed-toggle { display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 2px 10px; margin-top: 18px; padding: 11px 13px; background: var(--surface-subtle); border: 1px solid var(--line); border-radius: 11px; cursor: pointer; font-size: 13px; font-weight: 700; }
@@ -400,8 +400,11 @@ a.badge.success:hover { background: var(--success-bg-hover); }
 .note-status { color: var(--text-4); font-size: 11px; font-weight: 600; }
 .note-status.saved { color: var(--green); }
 .note-status.error { color: var(--danger-ink); }
-.note-input { width: 100%; padding: 11px 12px; color: var(--ink); background: var(--note-bg); border: 1px solid var(--note-border); border-radius: 10px; resize: vertical; font: inherit; font-size: 13px; line-height: 1.55; }
-.detail-description { margin: 20px 0; }
+.note-input { width: 100%; padding: 12px 13px; color: var(--ink); background: var(--note-bg); border: 1px solid var(--note-border); border-radius: 10px; resize: vertical; font: inherit; font-size: 15px; line-height: 1.6; }
+.detail-description { margin: 20px 0; color: var(--text-3); font-size: 16px; line-height: 1.7; }
+.drawer-head + .detail-tags span { font-size: 13px; }
+.detail-grid dt { font-size: 11px; }
+.detail-grid dd { font-size: 14px; line-height: 1.45; }
 .detail-grid dd small { display: block; margin-top: 4px; color: var(--text-4); font-size: 11px; font-weight: 500; }
 .detail-grid dd a { display: inline-flex; align-items: center; gap: 4px; color: var(--link); text-decoration: none; }
 .detail-grid .span-2 { grid-column: 1 / -1; }
@@ -474,6 +477,19 @@ a.badge.success:hover { background: var(--success-bg-hover); }
 .check-row input { margin-top: 3px; accent-color: var(--green-strong); }
 .check-row strong { display: block; font-size: 13px; }
 .check-row small { display: block; margin-top: 2px; color: var(--text-4); font-size: 12px; line-height: 1.4; }
+.stage-filter-box { margin: 14px 0; padding: 14px; background: var(--surface-subtle); border: 1px solid var(--line); border-radius: 12px; }
+.stage-filter-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+.stage-filter-heading strong, .stage-filter-heading small { display: block; }
+.stage-filter-heading strong { font-size: 14px; }
+.stage-filter-heading small { margin-top: 3px; color: var(--text-4); font-size: 12px; line-height: 1.45; }
+.text-button { padding: 2px 0; color: var(--green-strong); background: transparent; border: 0; cursor: pointer; font-size: 12px; font-weight: 700; }
+.stage-chip-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.stage-chip { display: flex; align-items: center; gap: 7px; padding: 8px 11px; color: var(--text-3); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 650; }
+.stage-chip:hover { border-color: var(--green); }
+.stage-chip.selected { color: var(--green-strong); background: var(--green-soft); border-color: var(--green); }
+.stage-chip input { width: 14px; height: 14px; margin: 0; accent-color: var(--green-strong); }
+.stage-warning { display: flex; align-items: flex-start; gap: 6px; margin: 11px 0 0; color: var(--amber); font-size: 12px; line-height: 1.45; }
+.stage-warning svg { flex: 0 0 auto; margin-top: 1px; }
 .simple-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .simple-table th { padding: 10px 14px; color: var(--muted); background: var(--surface-subtle); border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-align: left; text-transform: uppercase; white-space: nowrap; }
 .simple-table td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }

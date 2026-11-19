@@ -22,6 +22,13 @@ const SOURCES = [
   { value: "rss", label: "Funding news (RSS)", hint: "TechCrunch, Crunchbase News, EU-Startups, Tech.eu, VentureBeat" },
   { value: "yc", label: "Y Combinator directory", hint: "All public YC companies" },
 ];
+const EARLY_STAGE_TYPES = [
+  { value: "pre-seed", label: "Pre-seed", hint: "Includes explicit pre-seed, angel, and friends-and-family rounds." },
+  { value: "bootstrapped", label: "Bootstrapped", hint: "Companies explicitly described as bootstrapped." },
+  { value: "pre-funding", label: "Pre-funding", hint: "Unfunded companies or companies with no outside capital yet." },
+  { value: "ideation", label: "Ideation", hint: "Idea-stage or concept-stage companies." },
+  { value: "self-funded", label: "Self-funded", hint: "Founder-funded or explicitly self-funded companies." },
+];
 const STATUS_LABEL: Record<string, string> = { queued: "Queued", running: "Running", completed: "Completed", failed: "Failed", cancelled: "Cancelled" };
 
 export default function ScraperView({ notify }: { notify: Notify }) {
@@ -31,7 +38,7 @@ export default function ScraperView({ notify }: { notify: Notify }) {
   const [deleted, setDeleted] = useState<Tombstone[]>([]);
   const [starting, setStarting] = useState<"" | "collect" | "enrich">("");
   const [detail, setDetail] = useState<Job | null>(null);
-  const [collect, setCollect] = useState({ sources: ["sec", "rss", "yc"], sec_quarters: 1, limit: "", include_funds: false, enrich_after: true, enrich_limit: 200 });
+  const [collect, setCollect] = useState({ sources: ["sec", "rss", "yc"], funding_types: [] as string[], sec_quarters: 1, limit: "", include_funds: false, enrich_after: true, enrich_limit: 200 });
   const [enrich, setEnrich] = useState({ target: "missing_website", limit: 500, only_startups: true });
 
   const refresh = useCallback(async () => {
@@ -180,6 +187,30 @@ export default function ScraperView({ notify }: { notify: Notify }) {
                 <span><strong>{source.label}</strong><small>{source.hint}</small></span>
               </label>
             ))}
+          </div>
+          <div className="stage-filter-box">
+            <div className="stage-filter-heading">
+              <div><strong>Funding / company stage</strong><small>Leave all unchecked to collect every stage. Selected runs keep only explicit matches.</small></div>
+              {collect.funding_types.length > 0 && <button type="button" className="text-button" onClick={() => setCollect({ ...collect, funding_types: [] })}>Clear</button>}
+            </div>
+            <div className="stage-chip-grid">
+              {EARLY_STAGE_TYPES.map((stage) => (
+                <label key={stage.value} className={`stage-chip ${collect.funding_types.includes(stage.value) ? "selected" : ""}`} title={stage.hint}>
+                  <input
+                    type="checkbox"
+                    checked={collect.funding_types.includes(stage.value)}
+                    onChange={(event) => setCollect({
+                      ...collect,
+                      funding_types: event.target.checked
+                        ? [...collect.funding_types, stage.value]
+                        : collect.funding_types.filter((item) => item !== stage.value),
+                    })}
+                  />
+                  <span>{stage.label}</span>
+                </label>
+              ))}
+            </div>
+            {collect.funding_types.length > 0 && <p className="stage-warning"><CircleAlert size={14} /> SEC Form D does not identify pre-seed or self-funded stages, so unknown SEC rounds are excluded.</p>}
           </div>
           <div className="form-grid compact">
             <label className="field"><span className="field-label">SEC quarters</span><input className="text-input" type="number" min={1} max={40} value={collect.sec_quarters} onChange={(event) => setCollect({ ...collect, sec_quarters: Math.max(1, Number(event.target.value) || 1) })} /></label>

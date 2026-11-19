@@ -50,6 +50,10 @@ OpenAPI docs: `http://127.0.0.1:8000/docs`.
 Jobs run one at a time in a background thread and persist progress to `public.scrape_runs`. Run a single uvicorn
 worker. Runs interrupted by a restart are marked failed on startup.
 
+`POST /admin/jobs/collect` accepts an optional `funding_types` array containing `pre-seed`, `bootstrapped`,
+`pre-funding`, `ideation`, and/or `self-funded`. An empty array means all stages. Matching is conservative and
+uses explicit wording in the source company/round data.
+
 ## Deploy
 
 The Dockerfile and `render.yaml` deploy the API on any Python container host. Set `FASTAPI_URL` on the dashboard

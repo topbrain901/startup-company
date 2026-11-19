@@ -85,11 +85,17 @@ The enricher identifies itself as `FundingRadarBot`, honours robots.txt, and rat
 ```powershell
 python -m startup_scraper --sources sec,rss,yc --sec-quarters 1             # collect and save
 python -m startup_scraper --sources rss --limit 10 --dry-run                 # preview only
+python -m startup_scraper --sources rss,yc --funding-types pre-seed,bootstrapped,self-funded
 python -m startup_scraper --enrich-only --enrich 300 --enrich-target missing_website --startups-only
 ```
 
 Enrichment targets: `never`, `missing_website`, `missing_founded`, `careers_unchecked`, `stale`, `all`.
 Companies that were tried recently without success are skipped for 14 days, so repeated runs make progress.
+
+The admin Scraper page also offers an evidence-based funding/company-stage selector for `pre-seed`,
+`bootstrapped`, `pre-funding`, `ideation`, and `self-funded`. Leave every option unchecked to collect all stages.
+When options are selected, only companies whose source text explicitly supports a selected label are saved;
+generic Form D offerings are not guessed to be pre-seed.
 
 ## Tests
 

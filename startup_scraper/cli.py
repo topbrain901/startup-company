@@ -9,6 +9,7 @@ from pathlib import Path
 from .enrichment import DEFAULT_USER_AGENT, Enricher
 from .pipeline import ENRICH_TARGETS, collect, run_enrichment, select_enrichment_ids
 from .supabase import SupabaseStore
+from .stage_filter import EARLY_STAGE_TYPES, filter_by_stage_types, normalize_requested
 
 
 def load_dotenv(path: str = ".env") -> None:
@@ -29,6 +30,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--sec-quarters", type=int, default=1, help="Number of recent SEC bulk quarters")
     result.add_argument("--include-funds", action="store_true", help="Include pooled investment funds from SEC data")
     result.add_argument("--limit", type=int, help="Maximum records per source (useful for tests)")
+    result.add_argument(
+        "--funding-types",
+        default="",
+        help="Only save explicit early-stage matches. Comma-separated: " + ",".join(EARLY_STAGE_TYPES),
+    )
     result.add_argument("--dry-run", action="store_true", help="Collect and print samples without writing")
     result.add_argument("--json-output", help="Also save collected rows to a local JSON file")
     enrich = result.add_argument_group("enrichment (website, careers page, founding date)")
@@ -47,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     invalid = selected - {"sec", "rss", "yc"}
     if invalid:
         raise SystemExit(f"Unknown sources: {', '.join(sorted(invalid))}")
+    try:
+        funding_types = normalize_requested(args.funding_types.split(","))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
     store = None
     if not args.dry_run:
@@ -74,6 +84,12 @@ def main(argv: list[str] | None = None) -> int:
             limit=args.limit,
             include_funds=args.include_funds,
         )
+        companies, rounds = filter_by_stage_types(companies, rounds, funding_types)
+        if funding_types:
+            print(
+                f"Matched {len(companies)} companies to selected funding/stage types: "
+                f"{', '.join(sorted(funding_types))}"
+            )
         if args.json_output:
             payload = {"companies": [item.row() for item in companies], "funding_rounds": [item.row() for item in rounds]}
             Path(args.json_output).write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
