@@ -1,0 +1,14 @@
+# Caddy gets and renews the HTTPS certificate automatically.
+# Replace radar.example.com with your domain (its DNS A record must point to the VPS), then:
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+radar.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8787
+}
+
+# Only when the website runs on Vercel: give the API a public HTTPS address and set
+# FASTAPI_URL=https://api.example.com in Vercel. Remove the block above if this VPS doesn't serve the website.
+# api.example.com {
+# 	encode zstd gzip
+# 	reverse_proxy 127.0.0.1:8000
+# }

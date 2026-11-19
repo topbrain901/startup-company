@@ -1,0 +1,19 @@
+# FastAPI backend. Listens on 127.0.0.1 only: the website server is the only caller.
+# Edit User= and the /opt/funding-radar paths, then:
+#   sudo cp deploy/funding-radar-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now funding-radar-api
+[Unit]
+Description=Funding Radar API (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=YOUR_USER
+WorkingDirectory=/opt/funding-radar
+# One worker only: scrape/enrich jobs run in a background thread of this process.
+ExecStart=/opt/funding-radar/backend/venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

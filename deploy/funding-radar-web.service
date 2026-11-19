@@ -1,0 +1,21 @@
+# Dashboard website (production build). Run `npm ci && npm run build` in startup-dashboard first.
+# Edit User=, the paths, and the node path (`which node`; Node 22.13 or newer), then:
+#   sudo cp deploy/funding-radar-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now funding-radar-web
+[Unit]
+Description=Funding Radar dashboard
+After=network-online.target funding-radar-api.service
+Wants=network-online.target
+
+[Service]
+User=YOUR_USER
+WorkingDirectory=/opt/funding-radar/startup-dashboard
+# Reads startup-dashboard/.env. Stays on 127.0.0.1; Caddy serves it publicly over HTTPS.
+Environment=HOST=127.0.0.1
+Environment=PORT=8787
+ExecStart=/usr/bin/node scripts/start.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
