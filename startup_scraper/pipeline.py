@@ -12,7 +12,7 @@ from urllib.parse import quote
 from .enrichment import Enricher, EnrichmentResult
 from .http import HttpClient
 from .models import Company, FundingRound
-from .sources import rss, sec_form_d, yc
+from .sources import early_stage, rss, sec_form_d, yc
 from .supabase import SupabaseStore, in_list
 
 
@@ -37,6 +37,7 @@ def collect(
     sec_quarters: int = 1,
     limit: int | None = None,
     include_funds: bool = False,
+    directory_user_agent: str = "Mozilla/5.0 (compatible; FundingRadarBot/1.0)",
     log: Log = print,
 ) -> tuple[list[Company], list[FundingRound]]:
     companies: list[Company] = []
@@ -59,6 +60,20 @@ def collect(
     if "yc" in sources:
         log("Collecting Y Combinator directory…")
         companies.extend(yc.collect(HttpClient(timeout=60), limit=limit))
+    labels = {
+        "producthunt": "Product Hunt launches",
+        "betalist": "BetaList early-access startups",
+        "antler": "Antler portfolio",
+        "ef": "Entrepreneur First portfolio",
+        "techstars": "Techstars portfolio",
+        "wellfound": "Wellfound startup directory",
+    }
+    for source in early_stage.SUPPORTED:
+        if source in sources:
+            log(f"Collecting {labels[source]}…")
+            companies.extend(
+                early_stage.collect(source, user_agent=directory_user_agent, limit=limit, log=log)
+            )
     # Collapse repeat sightings inside the same run.
     companies = list({item.source_key: item for item in companies}.values())
     rounds = list({item.source_key: item for item in rounds}.values())

@@ -10,6 +10,7 @@ from .enrichment import DEFAULT_USER_AGENT, Enricher
 from .pipeline import ENRICH_TARGETS, collect, run_enrichment, select_enrichment_ids
 from .supabase import SupabaseStore
 from .stage_filter import EARLY_STAGE_TYPES, filter_by_stage_types, normalize_requested
+from .sources.early_stage import SUPPORTED as EARLY_STAGE_SOURCES
 
 
 def load_dotenv(path: str = ".env") -> None:
@@ -26,7 +27,12 @@ def load_dotenv(path: str = ".env") -> None:
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="Collect funded startup data into Supabase")
-    result.add_argument("--sources", default="sec,rss,yc", help="Comma-separated: sec,rss,yc")
+    all_sources = ("sec", "rss", "yc", *EARLY_STAGE_SOURCES)
+    result.add_argument(
+        "--sources",
+        default=",".join(all_sources),
+        help="Comma-separated: " + ",".join(all_sources),
+    )
     result.add_argument("--sec-quarters", type=int, default=1, help="Number of recent SEC bulk quarters")
     result.add_argument("--include-funds", action="store_true", help="Include pooled investment funds from SEC data")
     result.add_argument("--limit", type=int, help="Maximum records per source (useful for tests)")
@@ -50,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     args = parser().parse_args(argv)
     selected = {value.strip().lower() for value in args.sources.split(",") if value.strip()}
-    invalid = selected - {"sec", "rss", "yc"}
+    invalid = selected - {"sec", "rss", "yc", *EARLY_STAGE_SOURCES}
     if invalid:
         raise SystemExit(f"Unknown sources: {', '.join(sorted(invalid))}")
     try:
@@ -83,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
             sec_quarters=args.sec_quarters,
             limit=args.limit,
             include_funds=args.include_funds,
+            directory_user_agent=os.getenv("ENRICH_USER_AGENT") or DEFAULT_USER_AGENT,
         )
         companies, rounds = filter_by_stage_types(companies, rounds, funding_types)
         if funding_types:

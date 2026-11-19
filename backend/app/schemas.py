@@ -107,7 +107,14 @@ class RoleInput(BaseModel):
 
 
 class CollectJobInput(BaseModel):
-    sources: list[Literal["sec", "rss", "yc"]] = Field(default_factory=lambda: ["sec", "rss", "yc"], min_length=1)
+    sources: list[Literal[
+        "sec", "rss", "yc", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
+    ]] = Field(
+        default_factory=lambda: [
+            "rss", "yc", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
+        ],
+        min_length=1,
+    )
     sec_quarters: int = Field(default=1, ge=1, le=40)
     limit: int | None = Field(default=None, ge=1, le=100_000)
     include_funds: bool = False

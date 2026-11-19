@@ -80,11 +80,22 @@ On a sample of real records this found sites for 8 of 12 SEC-filing startups and
 SEC filers that are funds or SPVs mostly have no website, and are skipped when "Startups only" is on.
 The enricher identifies itself as `FundingRadarBot`, honours robots.txt, and rate-limits per host.
 
+## Early-stage directories
+
+The collector also reads public, robots-allowed pages from **Product Hunt, BetaList, Antler, Entrepreneur First,
+Techstars, and Wellfound**. Product Hunt uses its official Atom feed; the others use their public startup or
+portfolio listings. BetaList entries are labelled ideation/pre-launch. Recent Antler and Entrepreneur First
+cohorts are labelled inferred pre-seed, while mature portfolio entries keep a neutral portfolio stage.
+
+F6S currently rejects the bot client with HTTP 403, and Indie Hackers disallows automated product/API paths in
+robots.txt, so the collector does not bypass either restriction.
+
 ## CLI
 
 ```powershell
 python -m startup_scraper --sources sec,rss,yc --sec-quarters 1             # collect and save
 python -m startup_scraper --sources rss --limit 10 --dry-run                 # preview only
+python -m startup_scraper --sources producthunt,betalist,antler,ef,techstars,wellfound --limit 100
 python -m startup_scraper --sources rss,yc --funding-types pre-seed,bootstrapped,self-funded
 python -m startup_scraper --enrich-only --enrich 300 --enrich-target missing_website --startups-only
 ```

@@ -172,6 +172,7 @@ class JobManager:
             sec_quarters=options["sec_quarters"],
             limit=options.get("limit"),
             include_funds=options.get("include_funds", False),
+            directory_user_agent=settings.enrich_user_agent,
             log=job.log,
         )
         selected_types = options.get("funding_types") or []

@@ -21,6 +21,12 @@ const SOURCES = [
   { value: "sec", label: "SEC Form D filings", hint: "US exempt offerings, quarterly bulk data" },
   { value: "rss", label: "Funding news (RSS)", hint: "TechCrunch, Crunchbase News, EU-Startups, Tech.eu, VentureBeat" },
   { value: "yc", label: "Y Combinator directory", hint: "All public YC companies" },
+  { value: "producthunt", label: "Product Hunt", hint: "New product launches from the official Atom feed" },
+  { value: "betalist", label: "BetaList", hint: "Upcoming startups and early-access products" },
+  { value: "antler", label: "Antler portfolio", hint: "Public inception-stage investor portfolio" },
+  { value: "ef", label: "Entrepreneur First", hint: "Public talent-investor portfolio" },
+  { value: "techstars", label: "Techstars portfolio", hint: "Public accelerator portfolio companies" },
+  { value: "wellfound", label: "Wellfound", hint: "Public startup discovery directory" },
 ];
 const EARLY_STAGE_TYPES = [
   { value: "pre-seed", label: "Pre-seed", hint: "Includes explicit pre-seed, angel, and friends-and-family rounds." },
@@ -38,7 +44,7 @@ export default function ScraperView({ notify }: { notify: Notify }) {
   const [deleted, setDeleted] = useState<Tombstone[]>([]);
   const [starting, setStarting] = useState<"" | "collect" | "enrich">("");
   const [detail, setDetail] = useState<Job | null>(null);
-  const [collect, setCollect] = useState({ sources: ["sec", "rss", "yc"], funding_types: [] as string[], sec_quarters: 1, limit: "", include_funds: false, enrich_after: true, enrich_limit: 200 });
+  const [collect, setCollect] = useState({ sources: SOURCES.filter((source) => source.value !== "sec").map((source) => source.value), funding_types: [] as string[], sec_quarters: 1, limit: "", include_funds: false, enrich_after: true, enrich_limit: 200 });
   const [enrich, setEnrich] = useState({ target: "missing_website", limit: 500, only_startups: true });
 
   const refresh = useCallback(async () => {

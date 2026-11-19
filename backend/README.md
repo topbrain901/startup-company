@@ -54,6 +54,9 @@ worker. Runs interrupted by a restart are marked failed on startup.
 `pre-funding`, `ideation`, and/or `self-funded`. An empty array means all stages. Matching is conservative and
 uses explicit wording in the source company/round data.
 
+Supported `sources` values are `sec`, `rss`, `yc`, `producthunt`, `betalist`, `antler`, `ef`, `techstars`, and
+`wellfound`. The directory collectors use public pages only and honour robots.txt and host crawl delays.
+
 ## Deploy
 
 The Dockerfile and `render.yaml` deploy the API on any Python container host. Set `FASTAPI_URL` on the dashboard
