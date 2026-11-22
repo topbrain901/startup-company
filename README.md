@@ -99,12 +99,27 @@ cohorts are labelled inferred pre-seed, while mature portfolio entries keep a ne
 F6S currently rejects the bot client with HTTP 403, and Indie Hackers disallows automated product/API paths in
 robots.txt, so the collector does not bypass either restriction.
 
+## FundingWatcher
+
+`--sources fundingwatcher` reads FundingWatcher's free "recently funded" list and its six round-stage pages
+(pre-seed … Series D+): about 230 recently funded companies per run with website, description, sector, city and
+country, last round (type, amount, date), up to three investors, team-size range, founding year, and total raised
+(kept in `metadata.total_raised_usd`). Its terms allow crawling within robots.txt but not bulk re-publication of its
+startup and investor files (sold as CSVs), so the collector reads only those 7 pages, never walks its ~1,000
+sector/stage/region filter pages, skips the founder-contact tables, and links every row back to the list page.
+Keep the dashboard private (signed-in users only) when this source is enabled.
+
+**VCBacked (vcbacked.co) is not supported:** its terms of service forbid scraping or automated extraction beyond a
+paid subscription and compiling its data into a derivative database. If you have a subscription with exports,
+import those exports instead of crawling the site.
+
 ## CLI
 
 ```powershell
 python -m startup_scraper --sources sec,rss,yc --sec-quarters 1             # collect and save
 python -m startup_scraper --sources rss --limit 10 --dry-run                 # preview only
 python -m startup_scraper --sources producthunt,betalist,antler,ef,techstars,wellfound --limit 100
+python -m startup_scraper --sources fundingwatcher --enrich 250                   # ~230 recently funded companies
 python -m startup_scraper --sources rss,yc --funding-types pre-seed,bootstrapped,self-funded
 python -m startup_scraper --enrich-only --enrich 300 --enrich-target missing_website --startups-only
 ```

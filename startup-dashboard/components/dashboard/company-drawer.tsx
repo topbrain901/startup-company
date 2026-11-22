@@ -282,7 +282,7 @@ export default function CompanyDrawer({
                   )}
                 </dd>
               </div>
-              <div><dt>Team size</dt><dd>{company.employee_count ?? "—"}</dd></div>
+              <div><dt>Team size</dt><dd>{typeof company.metadata?.employees_range === "string" ? company.metadata.employees_range : company.employee_count ?? "—"}</dd></div>
               <div><dt>Total raised</dt><dd>{money(company.total_funding_usd)}<small>{company.round_count} recorded round{company.round_count === 1 ? "" : "s"}</small></dd></div>
               <div><dt>Latest valuation</dt><dd>{money(company.latest_valuation_usd)}{company.latest_valuation_usd ? <small>as reported in the funding news</small> : null}</dd></div>
               <div>

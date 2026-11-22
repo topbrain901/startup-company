@@ -22,6 +22,7 @@ const SOURCES = [
   { value: "sec", label: "SEC Form D filings", hint: "US exempt offerings, quarterly bulk data" },
   { value: "rss", label: "Funding news (RSS)", hint: "TechCrunch, Crunchbase News, EU-Startups, Tech.eu, VentureBeat" },
   { value: "yc", label: "Y Combinator directory", hint: "All public YC companies" },
+  { value: "fundingwatcher", label: "FundingWatcher", hint: "Recently funded list + one page per round stage (~300 companies)" },
   { value: "producthunt", label: "Product Hunt", hint: "New product launches from the official Atom feed" },
   { value: "betalist", label: "BetaList", hint: "Upcoming startups and early-access products" },
   { value: "antler", label: "Antler portfolio", hint: "Public inception-stage investor portfolio" },

@@ -12,7 +12,7 @@ from urllib.parse import quote
 from .enrichment import Enricher, EnrichmentResult
 from .http import HttpClient
 from .models import Company, FundingRound
-from .sources import early_stage, rss, sec_form_d, yc
+from .sources import early_stage, fundingwatcher, rss, sec_form_d, yc
 from .supabase import SupabaseStore, in_list
 
 
@@ -56,6 +56,11 @@ def collect(
     if "rss" in sources:
         log("Collecting funding-news feeds…")
         for company, funding in rss.collect(HttpClient(timeout=20), limit=limit):
+            companies.append(company)
+            rounds.append(funding)
+    if "fundingwatcher" in sources:
+        log("Collecting FundingWatcher recently funded lists…")
+        for company, funding in fundingwatcher.collect(user_agent=directory_user_agent, limit=limit, log=log):
             companies.append(company)
             rounds.append(funding)
     if "yc" in sources:

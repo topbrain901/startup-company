@@ -27,7 +27,7 @@ def load_dotenv(path: str = ".env") -> None:
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="Collect funded startup data into Supabase")
-    all_sources = ("sec", "rss", "yc", *EARLY_STAGE_SOURCES)
+    all_sources = ("sec", "rss", "yc", "fundingwatcher", *EARLY_STAGE_SOURCES)
     result.add_argument(
         "--sources",
         default=",".join(all_sources),
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     args = parser().parse_args(argv)
     selected = {value.strip().lower() for value in args.sources.split(",") if value.strip()}
-    invalid = selected - {"sec", "rss", "yc", *EARLY_STAGE_SOURCES}
+    invalid = selected - {"sec", "rss", "yc", "fundingwatcher", *EARLY_STAGE_SOURCES}
     if invalid:
         raise SystemExit(f"Unknown sources: {', '.join(sorted(invalid))}")
     try:

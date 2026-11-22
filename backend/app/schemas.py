@@ -118,10 +118,10 @@ class RoleInput(BaseModel):
 
 class CollectJobInput(BaseModel):
     sources: list[Literal[
-        "sec", "rss", "yc", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
+        "sec", "rss", "yc", "fundingwatcher", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
     ]] = Field(
         default_factory=lambda: [
-            "rss", "yc", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
+            "rss", "yc", "fundingwatcher", "producthunt", "betalist", "antler", "ef", "techstars", "wellfound"
         ],
         min_length=1,
     )

@@ -124,6 +124,7 @@ export const FOUNDED_SOURCE_LABELS: Record<string, string> = {
   sec_form_d: "SEC filing",
   yc_profile: "YC profile",
   wikidata: "Wikidata",
+  fundingwatcher: "FundingWatcher",
   website_structured_data: "company website",
   website_text: "company website",
   yc_batch_estimate: "estimated from YC batch",
