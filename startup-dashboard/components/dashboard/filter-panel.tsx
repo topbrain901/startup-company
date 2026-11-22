@@ -8,6 +8,7 @@ import {
   AMOUNT_OPTIONS,
   EMPTY_FILTERS,
   FUNDED_WITHIN_OPTIONS,
+  VALUATION_OPTIONS,
   type Filters,
 } from "../../lib/filters";
 import type { Facets } from "../../lib/types";
@@ -67,7 +68,7 @@ export default function FilterPanel({
       </section>
 
       <section className="filter-group">
-        <h4>Website & careers</h4>
+        <h4>Website, careers & contact</h4>
         <div className="filter-grid">
           <Segmented label="Own website" value={filters.website} options={ANY_YES_NO("Has site", "No site")} onChange={(website) => onChange({ website })} />
           <Segmented
@@ -87,6 +88,8 @@ export default function FilterPanel({
             <span className="field-label">Minimum open jobs</span>
             <input className="text-input" type="number" min={0} value={filters.min_jobs} onChange={(event) => onChange({ min_jobs: event.target.value })} placeholder="e.g. 3" />
           </label>
+          <Segmented label="Contact email" value={filters.email} options={ANY_YES_NO("Has email", "No email")} onChange={(email) => onChange({ email })} />
+          <Segmented label="LinkedIn page" value={filters.linkedin} options={ANY_YES_NO("Has LinkedIn", "None")} onChange={(linkedin) => onChange({ linkedin })} />
         </div>
       </section>
 
@@ -98,13 +101,19 @@ export default function FilterPanel({
           <SelectField label="Latest round at least" value={filters.amount_min} options={AMOUNT_OPTIONS} onChange={(amount_min) => onChange({ amount_min })} />
           <SelectField label="Latest round at most" value={filters.amount_max} options={AMOUNT_OPTIONS} onChange={(amount_max) => onChange({ amount_max })} />
           <SelectField label="Total raised at least" value={filters.total_min} options={AMOUNT_OPTIONS} onChange={(total_min) => onChange({ total_min })} />
+          <SelectField label="Valuation at least" value={filters.valuation_min} options={VALUATION_OPTIONS} onChange={(valuation_min) => onChange({ valuation_min })} />
+          <label className="field">
+            <span className="field-label">Investor contains</span>
+            <input className="text-input" value={filters.investor} onChange={(event) => onChange({ investor: event.target.value })} placeholder="e.g. Sequoia, Y Combinator" />
+          </label>
         </div>
       </section>
 
       <section className="filter-group">
         <h4>Company</h4>
         <div className="filter-grid">
-          <MultiSelect label="Industry" options={facets?.industries || []} value={filters.industry} onChange={(industry) => onChange({ industry })} />
+          <MultiSelect label="Sector" options={facets?.sectors || []} value={filters.sector} onChange={(sector) => onChange({ sector })} />
+          <MultiSelect label="Industry (as the source names it)" options={facets?.industries || []} value={filters.industry} onChange={(industry) => onChange({ industry })} />
           <MultiSelect label="Company type" options={facets?.kinds || []} value={filters.kind} onChange={(kind) => onChange({ kind })} formatOption={kindLabel} />
           <NumberRange
             label={`Founded year${facets?.founded_min ? ` (${facets.founded_min}–${facets.founded_max})` : ""}`}

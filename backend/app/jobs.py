@@ -50,6 +50,7 @@ class Job:
         self.counters: dict[str, int] = {
             "companies_found": 0, "rounds_found": 0, "companies_saved": 0, "rounds_saved": 0,
             "enriched_count": 0, "websites_found": 0, "careers_found": 0, "founded_found": 0,
+            "contacts_found": 0,
         }
         self.log_lines: list[str] = []
         self.error: str | None = None
@@ -75,6 +76,7 @@ class Job:
             self.counters["websites_found"] += int(result.website_found)
             self.counters["careers_found"] += int(result.careers_found)
             self.counters["founded_found"] += int(result.founded_found)
+            self.counters["contacts_found"] += int(result.contacts_found)
             self.progress["errors"] = self.progress.get("errors", 0) + int(result.error is not None)
             interesting = [
                 line for line in result.log
@@ -226,7 +228,7 @@ class JobManager:
         )
         job.log(
             f"Enrichment done: {job.counters['websites_found']} websites, {job.counters['careers_found']} careers pages, "
-            f"{job.counters['founded_found']} founding dates"
+            f"{job.counters['founded_found']} founding dates, {job.counters['contacts_found']} with new links/contact email"
         )
 
 
@@ -272,7 +274,7 @@ async def job_history(admin: UserContext = Depends(admin_user), settings: Settin
     rows, _ = await SupabaseAPI(settings).select(
         "scrape_runs",
         "select=id,kind,status,sources,options,progress,companies_found,rounds_found,companies_saved,rounds_saved,"
-        "enriched_count,websites_found,careers_found,founded_found,error,requested_by_email,created_at,started_at,completed_at"
+        "enriched_count,websites_found,careers_found,founded_found,contacts_found,error,requested_by_email,created_at,started_at,completed_at"
         "&order=created_at.desc&limit=40",
     )
     job = manager.active

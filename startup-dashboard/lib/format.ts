@@ -67,6 +67,21 @@ export function safeHref(url: string | null | undefined): string | undefined {
   }
 }
 
+/** Last path segment of a profile URL: "https://x.com/acme" -> "@acme" with prefix "@". */
+export function profileHandle(url: string | null | undefined, prefix = ""): string {
+  if (!url) return "";
+  try {
+    const path = new URL(url).pathname.replace(/\/+$/, "");
+    return prefix + decodeURIComponent(path.slice(path.lastIndexOf("/") + 1));
+  } catch {
+    return url;
+  }
+}
+
+export function safeMailto(email: string | null | undefined): string | undefined {
+  return email && /^[^\s@<>"?&]+@[^\s@<>"?&]+\.[a-z]{2,}$/i.test(email) ? `mailto:${email}` : undefined;
+}
+
 export function percent(part: number, total: number): string {
   return total ? `${Math.round((part / total) * 100)}%` : "0%";
 }

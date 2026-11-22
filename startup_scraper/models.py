@@ -62,6 +62,9 @@ class FundingRound:
     amount: float | None = None
     currency: str | None = None
     amount_usd: float | None = None
+    valuation: float | None = None
+    valuation_currency: str | None = None
+    valuation_usd: float | None = None
     investors: list[str] = field(default_factory=list)
     title: str | None = None
     summary: str | None = None

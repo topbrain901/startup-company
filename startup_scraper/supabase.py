@@ -54,14 +54,19 @@ class SupabaseStore:
                 "SUPABASE_KEY is an anon/publishable key. This collector needs a "
                 "server-only service_role JWT or sb_secret_ key; anon writes are disabled."
             )
-        url = f"{self.url}/rest/v1/startup_companies?select=id,entity_kind,edited_fields&limit=1"
+        # The probed columns are the newest ones each table needs (migration 004).
+        probes = (
+            "startup_companies?select=id,entity_kind,edited_fields,linkedin_url,contact_email,sectors&limit=1",
+            "funding_rounds?select=id,valuation_usd&limit=1",
+        )
         try:
-            self.client.request(url, headers=self.headers)
+            for probe in probes:
+                self.client.request(f"{self.url}/rest/v1/{probe}", headers=self.headers)
         except RuntimeError as exc:
             raise RuntimeError(
                 "Supabase connection check failed. Confirm SUPABASE_URL, apply every SQL file in "
-                "supabase/migrations (in order), and set SUPABASE_KEY to a server-side "
-                f"service-role/secret key. Details: {exc}"
+                "supabase/migrations (in order, including 004_contacts_valuation_sectors.sql), and set "
+                f"SUPABASE_KEY to a server-side service-role/secret key. Details: {exc}"
             ) from exc
 
     # -- generic helpers -------------------------------------------------------
@@ -135,7 +140,8 @@ class SupabaseStore:
     # -- enrichment helpers ------------------------------------------------------
     ENRICH_COLUMNS = (
         "id,name,website,domain,description,city,state,country,source_name,source_url,entity_kind,"
-        "founded_year,founded_source,website_status,website_discovery_source,edited_fields,metadata"
+        "founded_year,founded_source,website_status,website_discovery_source,edited_fields,metadata,"
+        "linkedin_url,twitter_url,github_url,contact_email"
     )
 
     def enrichment_rows(self, ids: list[str]) -> list[dict[str, Any]]:

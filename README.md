@@ -1,6 +1,7 @@
 # Funding Radar
 
-Find recently funded startups, their official websites, careers pages, and founding dates, and track which ones you have looked at.
+Find recently funded startups, their official websites, careers pages, founding dates, social profiles, contact emails,
+investors, and valuations, and track which ones you have looked at.
 
 ```
 startup_scraper/   Python collector + enrichment (no third-party dependencies, no API keys)
@@ -17,9 +18,12 @@ The browser never talks to Supabase data tables. It signs in with Supabase Auth,
 
 1. **Database**: in the Supabase SQL editor run, in order:
    `supabase/migrations/001_startup_funding.sql` (already applied if you have data),
-   `002_…` (optional), and **`003_roles_notes_views_enrichment.sql`**. 003 is safe to re-run. It also cleans existing data:
+   `002_…` (optional), **`003_roles_notes_views_enrichment.sql`**, then **`004_contacts_valuation_sectors.sql`**.
+   Both are safe to re-run (if you ever re-run 003, run 004 again afterwards). 003 cleans existing data:
    it normalises countries (`USA; Remote` → United States + remote flag), title-cases SEC locations, replaces the
    wrong YC founding years with batch-year estimates, classifies company types, and builds funding summaries.
+   004 adds LinkedIn / X / GitHub / contact email, round valuations, investors and sectors on each company, and
+   backfills the social links YC profiles had already provided. The collector refuses to run until 004 is applied.
 2. **Environment**: copy `.env.example` to `.env` at the repo root (used by the collector and the API; the API also
    reads `backend/.env`, which takes priority) and set the
    Supabase URL, service-role key, `SEC_USER_AGENT`, and `ADMIN_EMAILS` (your login email, so you become admin).
@@ -52,7 +56,8 @@ Notes and viewed status are per person. Fields an admin edits are locked against
 
 Free-text search, plus: country, state/region, city/place text, remote; has website; careers page
 (yes / no / not checked), job board provider (Greenhouse, Lever, Ashby, YC, company site…), hiring, minimum open
-jobs; round type, last funded within, latest round and total raised amounts; industry, company type
+jobs, has contact email, has LinkedIn page; round type, last funded within, latest round and total raised amounts,
+minimum valuation, investor name; sector, industry, company type
 (startup / fund / real estate / other), founded-year range, founding date known, team size, stage, status, YC batch,
 data source, recently added; viewed and has-note. Quick chips cover the common ones, and every filter is kept in
 the URL so views can be bookmarked.
@@ -72,7 +77,11 @@ location or description words, parked-domain detection):
 
 On each website it then looks for a **careers/jobs page** (nav links, common paths such as `/careers`, careers
 subdomains, and embedded job boards), and reads **open-job counts** from the public Greenhouse, Lever, Ashby,
-Workable, Recruitee, and SmartRecruiters APIs. **Founding dates** come, best first, from SEC filings, YC profiles,
+Workable, Recruitee, and SmartRecruiters APIs. **Social profiles** (LinkedIn company page, X, GitHub) come from the YC
+profile, then the website's links (or its embedded page data, when the footer is rendered by JavaScript; there the
+handle must match the company name), then Wikidata. The **contact email** is a role address (`careers@`, `jobs@`,
+`hello@`, `contact@`, …) on the company's own domain, read from the homepage or its contact page; personal
+addresses and personal LinkedIn profiles are never collected. **Founding dates** come, best first, from SEC filings, YC profiles,
 Wikidata, the site's structured data or "founded in …" text, then estimates (YC batch, domain registration via
 RDAP, copyright range). The UI marks estimates with `~`.
 
@@ -100,7 +109,8 @@ python -m startup_scraper --sources rss,yc --funding-types pre-seed,bootstrapped
 python -m startup_scraper --enrich-only --enrich 300 --enrich-target missing_website --startups-only
 ```
 
-Enrichment targets: `never`, `missing_website`, `missing_founded`, `careers_unchecked`, `stale`, `all`.
+Enrichment targets: `never`, `missing_website`, `missing_founded`, `careers_unchecked`, `missing_contacts`, `stale`, `all`.
+Use `missing_contacts` once after applying 004 to fill profiles and contact emails for companies enriched before it.
 Companies that were tried recently without success are skipped for 14 days, so repeated runs make progress.
 
 The admin Scraper page also offers an evidence-based funding/company-stage selector for `pre-seed`,
@@ -118,6 +128,14 @@ python -m unittest discover -s tests
 
 - A Form D is a notice of an exempt offering, not proof the issuer is a tech startup; use the company-type filter.
 - Form D `amount_usd` is the issuer-reported total amount sold, which may be cumulative on amendments.
+- **From funding news** the collector also reads the **valuation** ("at a $1.2B valuation", "now valued at $300M"; never
+  mistaken for the round size), **investors** ("led by", "co-led by", "with participation from", "backed by",
+  "raised … from"), and the company's **location** ("Berlin-based", "headquartered in Austin, Texas", "Finnish
+  healthtech Treat"). Locations are only accepted from a built-in list of countries, US states, and startup hubs, so
+  words like "AI-based" are never mistaken for places, and an investor's city is not taken as the company's.
+- **Sectors** (AI & machine learning, Fintech, Health & biotech, B2B software, …) are one taxonomy across all sources,
+  computed in the database from the industry, sub-industry, description, and YC tags. A company can have several.
+  They are keyword-based: good for filtering, not a curated classification. The source's own label stays in `industry`.
 - News amounts are parsed from headlines and summaries, and are flagged for verification in metadata.
 - The collector stores public company facts only. It does not collect personal emails, bypass logins, or fetch pages
   disallowed by robots.txt.

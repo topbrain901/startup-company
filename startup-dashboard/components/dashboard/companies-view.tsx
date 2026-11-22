@@ -38,6 +38,7 @@ import {
   FUNDED_WITHIN_OPTIONS,
   QUICK_FILTERS,
   SORT_OPTIONS,
+  VALUATION_OPTIONS,
   activeFilterCount,
   filtersFromSearch,
   filtersToParams,
@@ -57,6 +58,10 @@ const SCALAR_LABELS: Partial<Record<keyof Filters, (value: string) => string>> =
   website: (value) => (value === "yes" ? "Has website" : "No website"),
   careers: (value) => ({ yes: "Has careers page", no: "No careers page", unchecked: "Careers not checked" })[value] || value,
   hiring: (value) => (value === "yes" ? "Hiring" : "Not hiring"),
+  email: (value) => (value === "yes" ? "Has contact email" : "No contact email"),
+  linkedin: (value) => (value === "yes" ? "Has LinkedIn" : "No LinkedIn"),
+  investor: (value) => `Investor: ${value}`,
+  valuation_min: (value) => `Valuation ≥ ${optionLabel(VALUATION_OPTIONS, value)}`,
   viewed: (value) => (value === "yes" ? "Viewed" : "Not viewed"),
   notes: (value) => (value === "yes" ? "With my note" : "Without my note"),
   founded_known: (value) => (value === "yes" ? "Founding date known" : "Founding date unknown"),
@@ -281,7 +286,7 @@ export default function CompaniesView({ isAdmin, notify }: { isAdmin: boolean; n
       <div className="toolbar">
         <label className="search-box">
           <Search size={17} />
-          <input value={searchText} onChange={(event) => { typed.current = true; setSearchText(event.target.value); }} placeholder="Search name, description, domain, location, industry…" aria-label="Search companies" />
+          <input value={searchText} onChange={(event) => { typed.current = true; setSearchText(event.target.value); }} placeholder="Search name, description, domain, location, industry, investor…" aria-label="Search companies" />
           {searchText && <button onClick={() => updateFilters({ q: "" })} aria-label="Clear search"><X size={15} /></button>}
         </label>
         <button className={`button secondary filter-toggle ${showFilters ? "active" : ""}`} onClick={() => setShowFilters((value) => !value)} aria-expanded={showFilters}>
@@ -362,7 +367,7 @@ export default function CompaniesView({ isAdmin, notify }: { isAdmin: boolean; n
                             {!row.viewed && <span className="unviewed-dot" aria-hidden />}{row.name}
                           </button>
                           <span className="company-sub">
-                            {row.industry && <span className="industry">{row.industry}{row.stage ? ` · ${row.stage}` : ""} · </span>}
+                            {(row.industry || row.sectors?.[0]) && <span className="industry">{row.industry || row.sectors?.[0]}{row.stage ? ` · ${row.stage}` : ""} · </span>}
                             {row.description || row.subindustry || label(KIND_LABELS, row.entity_kind)}
                           </span>
                         </div>
@@ -370,7 +375,7 @@ export default function CompaniesView({ isAdmin, notify }: { isAdmin: boolean; n
                     </td>
                     <td><span className="cell-main">{[row.city, row.state].filter(Boolean).join(", ") || row.location || "—"}</span><span className="cell-sub">{row.country || ""}{row.is_remote ? " · Remote" : ""}</span></td>
                     <td><span className="cell-main" title={row.latest_round_type || undefined}>{roundLabel(row.latest_round_type)}</span><span className="cell-sub">{row.latest_round_on ? `${money(row.latest_amount_usd)} · ${shortDate(row.latest_round_on)}` : ""}</span></td>
-                    <td className="num"><span className="cell-money">{money(row.total_funding_usd)}</span></td>
+                    <td className="num"><span className="cell-money">{money(row.total_funding_usd)}</span>{row.latest_valuation_usd ? <span className="cell-sub">valued {money(row.latest_valuation_usd)}</span> : null}</td>
                     <td title={row.founded_source ? label(FOUNDED_SOURCE_LABELS, row.founded_source) : undefined}>
                       {row.founded_year ? <span className={estimated ? "estimated" : ""}>{estimated ? "~" : ""}{row.founded_year}</span> : <span className="muted">—</span>}
                     </td>

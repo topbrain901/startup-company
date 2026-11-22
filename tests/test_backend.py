@@ -72,7 +72,10 @@ class FakeAPI:
     async def rpc(self, function, args):
         self.db.calls.append(("RPC", function, None, args))
         if function == "search_companies":
-            return {"total": 31, "rows": [{"name": "Acme", "website": "https://acme.com", "viewed": True, "note": "Ping CTO"}]}
+            return {"total": 31, "rows": [{
+                "name": "Acme", "website": "https://acme.com", "viewed": True, "note": "Ping CTO",
+                "investors": ["Accel", "Sequoia"], "sectors": ["Fintech"], "contact_email": "hello@acme.com",
+            }]}
         return {}
 
 
@@ -147,6 +150,46 @@ class BackendTests(unittest.TestCase):
         self.assertEqual((p["limit"], p["offset"]), (10, 10))
         self.assertNotIn("states", p)  # empty filters are omitted
 
+    def test_search_contact_investor_sector_filters(self):
+        response = self.get(
+            "/companies",
+            params=[
+                ("sector", "Fintech"), ("sector", "AI & machine learning"), ("investor", " Sequoia "),
+                ("email", "yes"), ("linkedin", "no"), ("valuation_min", "100000000"), ("sort", "valuation"),
+            ],
+        )
+        self.assertEqual(response.status_code, 200)
+        p = self.db.of("RPC")[0][3]["p"]
+        self.assertEqual(p["sectors"], ["Fintech", "AI & machine learning"])
+        self.assertEqual((p["investor"], p["email"], p["linkedin"], p["sort"]), ("Sequoia", "yes", "no", "valuation"))
+        self.assertEqual(p["valuation_min"], 100_000_000)
+
+    def test_admin_contact_fields_are_normalized_and_locked(self):
+        response = self.send(
+            "PATCH", f"/admin/companies/{COMPANY_ID}", token="admin-token",
+            json={"linkedin_url": "linkedin.com/company/acme", "twitter_url": "@acme", "contact_email": " Hello@Acme.com "},
+        )
+        self.assertEqual(response.status_code, 200)
+        body = self.db.of("PATCH", "startup_companies")[0][3]
+        self.assertEqual(body["linkedin_url"], "https://www.linkedin.com/company/acme")
+        self.assertEqual((body["twitter_url"], body["contact_email"]), ("https://x.com/acme", "hello@acme.com"))
+        for field in ("linkedin_url", "twitter_url", "contact_email"):
+            self.assertIn(field, body["edited_fields"])
+
+    def test_admin_rejects_bad_contact_fields(self):
+        for payload in ({"linkedin_url": "https://www.linkedin.com/in/jane"}, {"contact_email": "not-an-email"}):
+            response = self.send("PATCH", f"/admin/companies/{COMPANY_ID}", token="admin-token", json=payload)
+            self.assertEqual(response.status_code, 422, payload)
+
+    def test_round_valuation_in_usd(self):
+        response = self.send(
+            "POST", "/admin/funding-rounds", token="admin-token",
+            json={"company_id": COMPANY_ID, "round_type": "Series A", "amount": 5e6, "valuation_usd": 4e7},
+        )
+        self.assertEqual(response.status_code, 201)
+        body = self.db.of("POST", "funding_rounds")[0][3]
+        self.assertEqual((body["valuation"], body["valuation_currency"], body["valuation_usd"]), (4e7, "USD", 4e7))
+
     def test_rejects_bad_filter_values(self):
         self.assertEqual(self.get("/companies", params={"careers": "maybe"}).status_code, 422)
         self.assertEqual(self.get("/companies", params={"founded_from": "99"}).status_code, 422)
@@ -209,6 +252,9 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(lines[0].startswith("Company,Website,Careers page"))
         self.assertIn("Acme,https://acme.com", lines[1])
         self.assertIn("Ping CTO", lines[1])
+        self.assertIn("Investors", lines[0])
+        self.assertIn("Accel; Sequoia", lines[1])  # lists are readable, not Python reprs
+        self.assertIn("hello@acme.com", lines[1])
 
     def test_cannot_demote_self(self):
         response = self.send("PATCH", f"/admin/users/{ADMIN_ID}/role", token="admin-token", json={"role": "user"})

@@ -9,6 +9,7 @@ export type Filters = {
   country: string[];
   state: string[];
   industry: string[];
+  sector: string[];
   stage: string[];
   status: string[];
   source: string[];
@@ -20,6 +21,9 @@ export type Filters = {
   website: YesNo;
   careers: "" | "yes" | "no" | "unchecked";
   hiring: YesNo;
+  email: YesNo;
+  linkedin: YesNo;
+  investor: string;
   viewed: YesNo;
   notes: YesNo;
   founded_known: YesNo;
@@ -27,6 +31,7 @@ export type Filters = {
   amount_min: string;
   amount_max: string;
   total_min: string;
+  valuation_min: string;
   funded_within: string;
   founded_from: string;
   founded_to: string;
@@ -37,13 +42,14 @@ export type Filters = {
 };
 
 export const ARRAY_KEYS = [
-  "country", "state", "industry", "stage", "status", "source", "batch", "kind", "round_type", "provider",
+  "country", "state", "industry", "sector", "stage", "status", "source", "batch", "kind", "round_type", "provider",
 ] as const;
 
 export const EMPTY_FILTERS: Filters = {
-  q: "", location: "", country: [], state: [], industry: [], stage: [], status: [], source: [], batch: [],
-  kind: [], round_type: [], provider: [], remote: "", website: "", careers: "", hiring: "", viewed: "",
-  notes: "", founded_known: "", min_jobs: "", amount_min: "", amount_max: "", total_min: "", funded_within: "",
+  q: "", location: "", country: [], state: [], industry: [], sector: [], stage: [], status: [], source: [], batch: [],
+  kind: [], round_type: [], provider: [], remote: "", website: "", careers: "", hiring: "", email: "", linkedin: "",
+  investor: "", viewed: "", notes: "", founded_known: "", min_jobs: "", amount_min: "", amount_max: "", total_min: "",
+  valuation_min: "", funded_within: "",
   founded_from: "", founded_to: "", team_min: "", team_max: "", added_within: "", sort: "funded",
 };
 
@@ -51,6 +57,7 @@ export const SORT_OPTIONS = [
   { value: "funded", label: "Most recently funded" },
   { value: "amount", label: "Largest latest round" },
   { value: "total", label: "Most total funding" },
+  { value: "valuation", label: "Highest valuation" },
   { value: "jobs", label: "Most open jobs" },
   { value: "added", label: "Newest in database" },
   { value: "founded_desc", label: "Youngest companies" },
@@ -86,6 +93,16 @@ export const AMOUNT_OPTIONS = [
   { value: "25000000", label: "$25M" },
   { value: "50000000", label: "$50M" },
   { value: "100000000", label: "$100M" },
+];
+
+export const VALUATION_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "10000000", label: "$10M" },
+  { value: "50000000", label: "$50M" },
+  { value: "100000000", label: "$100M" },
+  { value: "500000000", label: "$500M" },
+  { value: "1000000000", label: "$1B" },
+  { value: "10000000000", label: "$10B" },
 ];
 
 const SCALAR_KEYS = (Object.keys(EMPTY_FILTERS) as Array<keyof Filters>).filter(
@@ -126,6 +143,7 @@ export const QUICK_FILTERS: QuickFilter[] = [
   { label: "Not viewed", apply: { viewed: "no" }, active: (f) => f.viewed === "no" },
   { label: "Has careers page", apply: { careers: "yes" }, active: (f) => f.careers === "yes" },
   { label: "Hiring now", apply: { hiring: "yes" }, active: (f) => f.hiring === "yes" },
+  { label: "Has contact email", apply: { email: "yes" }, active: (f) => f.email === "yes" },
   { label: "Has website", apply: { website: "yes" }, active: (f) => f.website === "yes" },
   { label: "No website", apply: { website: "no" }, active: (f) => f.website === "no" },
   { label: "Startups only", apply: { kind: ["startup"] }, active: (f) => f.kind.length === 1 && f.kind[0] === "startup" },

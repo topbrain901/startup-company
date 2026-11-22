@@ -7,6 +7,7 @@ import {
   Globe,
   Loader2,
   LockOpen,
+  Mail,
   Pencil,
   Plus,
   Trash2,
@@ -26,8 +27,10 @@ import {
   initials,
   label,
   money,
+  profileHandle,
   relativeTime,
   safeHref,
+  safeMailto,
   shortDate,
 } from "../../lib/format";
 import type { CompanyDetail, CompanyRow, FundingRound } from "../../lib/types";
@@ -180,6 +183,14 @@ export default function CompanyDrawer({
   const website = safeHref(company?.website);
   const careers = safeHref(company?.careers_url);
   const source = safeHref(company?.source_url);
+  const email = safeMailto(company?.contact_email);
+  const profiles = company
+    ? ([
+        ["LinkedIn", safeHref(company.linkedin_url), profileHandle(company.linkedin_url)],
+        ["X", safeHref(company.twitter_url), profileHandle(company.twitter_url, "@")],
+        ["GitHub", safeHref(company.github_url), profileHandle(company.github_url)],
+      ] as const).filter(([, href]) => href)
+    : [];
   const estimated = company?.founded_source ? ESTIMATED_FOUNDED.has(company.founded_source) : false;
   const edited = (company?.edited_fields || []).filter((field) => !["normalized_name", "domain", "founded_source", "founded_on", "website_status", "website_discovery_source", "website_verified_at", "careers_provider", "careers_checked_at"].includes(field));
 
@@ -207,6 +218,7 @@ export default function CompanyDrawer({
 
             <div className="detail-tags">
               {company.industry && <span>{company.industry}</span>}
+              {(company.sectors || []).filter((sector) => sector !== company.industry).map((sector) => <span key={sector} className="sector">{sector}</span>)}
               {company.stage && <span>{company.stage}</span>}
               {company.status && <span>{company.status}</span>}
               {company.is_remote && <span>Remote-friendly</span>}
@@ -272,6 +284,26 @@ export default function CompanyDrawer({
               </div>
               <div><dt>Team size</dt><dd>{company.employee_count ?? "—"}</dd></div>
               <div><dt>Total raised</dt><dd>{money(company.total_funding_usd)}<small>{company.round_count} recorded round{company.round_count === 1 ? "" : "s"}</small></dd></div>
+              <div><dt>Latest valuation</dt><dd>{money(company.latest_valuation_usd)}{company.latest_valuation_usd ? <small>as reported in the funding news</small> : null}</dd></div>
+              <div>
+                <dt>Contact email</dt>
+                <dd>{email ? <a href={email}>{company.contact_email}</a> : "—"}{email && <small>published on the company&apos;s site</small>}</dd>
+              </div>
+              <div className="span-2">
+                <dt>Profiles</dt>
+                <dd>
+                  {profiles.length ? (
+                    <span className="link-list">
+                      {profiles.map(([name, href, handle]) => (
+                        <a key={name} href={href} target="_blank" rel="noreferrer">{name} <small>{handle}</small> <ExternalLink size={11} /></a>
+                      ))}
+                    </span>
+                  ) : "—"}
+                </dd>
+              </div>
+              {(company.investors || []).length > 0 && (
+                <div className="span-2"><dt>Investors</dt><dd>{(company.investors || []).join(", ")}</dd></div>
+              )}
               <div><dt>Domain registered</dt><dd>{shortDate(company.domain_registered_on)}</dd></div>
               <div><dt>Last enriched</dt><dd>{relativeTime(company.enriched_at)}{company.enrichment_error && <small className="error-text">{company.enrichment_error}</small>}</dd></div>
               <div className="span-2">
@@ -293,7 +325,7 @@ export default function CompanyDrawer({
                     <li key={round.id}>
                       <div>
                         <strong>{round.round_type || "Funding round"}</strong>
-                        <span>{shortDate(round.announced_on)} · {round.source_name}{round.investors?.length ? ` · ${round.investors.slice(0, 3).join(", ")}` : ""}</span>
+                        <span>{shortDate(round.announced_on)} · {round.source_name}{round.investors?.length ? ` · ${round.investors.slice(0, 3).join(", ")}` : ""}{round.valuation_usd ?? round.valuation ? ` · valued ${money(round.valuation_usd ?? round.valuation)}` : ""}</span>
                       </div>
                       <div className="round-amount">
                         <strong>{money(round.amount_usd ?? round.amount)}</strong>
@@ -332,6 +364,7 @@ export default function CompanyDrawer({
             <div className="drawer-actions">
               {website && <a href={website} target="_blank" rel="noreferrer"><Globe size={16} /> Visit website</a>}
               {careers && <a href={careers} target="_blank" rel="noreferrer" className="secondary"><Briefcase size={16} /> Careers</a>}
+              {email && <a href={email} className="secondary"><Mail size={16} /> Email</a>}
             </div>
           </>
         )}
@@ -391,6 +424,7 @@ function RoundEditor({
     round_type: round?.round_type || "",
     announced_on: round?.announced_on || "",
     amount_usd: round?.amount_usd?.toString() || "",
+    valuation_usd: (round?.valuation_usd ?? round?.valuation)?.toString() || "",
     investors: round?.investors?.join(", ") || "",
     source_url: round?.source_url || "",
   });
@@ -407,6 +441,9 @@ function RoundEditor({
       amount_usd: form.amount_usd ? Number(form.amount_usd) : null,
       amount: form.amount_usd ? Number(form.amount_usd) : null,
       currency: "USD",
+      valuation_usd: form.valuation_usd ? Number(form.valuation_usd) : null,
+      valuation: form.valuation_usd ? Number(form.valuation_usd) : null,
+      valuation_currency: form.valuation_usd ? "USD" : null,
       investors: form.investors.split(",").map((item) => item.trim()).filter(Boolean),
       source_url: form.source_url || null,
     };
@@ -427,6 +464,7 @@ function RoundEditor({
           <label className="field"><span className="field-label">Round type</span><input className="text-input" value={form.round_type} onChange={(event) => setForm({ ...form, round_type: event.target.value })} placeholder="Seed, Series A…" /></label>
           <label className="field"><span className="field-label">Announced on</span><input className="text-input" type="date" value={form.announced_on} onChange={(event) => setForm({ ...form, announced_on: event.target.value })} /></label>
           <label className="field"><span className="field-label">Amount (USD)</span><input className="text-input" type="number" min={0} value={form.amount_usd} onChange={(event) => setForm({ ...form, amount_usd: event.target.value })} /></label>
+          <label className="field"><span className="field-label">Valuation (USD)</span><input className="text-input" type="number" min={0} value={form.valuation_usd} onChange={(event) => setForm({ ...form, valuation_usd: event.target.value })} /></label>
           <label className="field"><span className="field-label">Investors (comma separated)</span><input className="text-input" value={form.investors} onChange={(event) => setForm({ ...form, investors: event.target.value })} /></label>
           <label className="field span-2"><span className="field-label">Source URL</span><input className="text-input" value={form.source_url} onChange={(event) => setForm({ ...form, source_url: event.target.value })} placeholder="https://…" /></label>
         </div>

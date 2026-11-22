@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
+from startup_scraper.contacts import EMAIL_RE, github_url, linkedin_url, twitter_url
 from startup_scraper.enrichment import Enricher
 from startup_scraper.supabase import SupabaseStore
 from startup_scraper.util import canonical_url, domain_from_url, normalize_name
@@ -71,6 +72,21 @@ def curated_changes(changes: dict[str, Any]) -> dict[str, Any]:
         data["founded_source"] = "manual" if has_value else None
         if not has_value:
             data["founded_on"] = None
+    for key, canonical, example in (
+        ("linkedin_url", linkedin_url, "https://www.linkedin.com/company/acme"),
+        ("twitter_url", twitter_url, "https://x.com/acme or @acme"),
+        ("github_url", github_url, "https://github.com/acme"),
+    ):
+        if data.get(key):
+            value = canonical(data[key])
+            if not value:
+                raise HTTPException(422, f"{key.replace('_url', '').title()} link must look like {example}")
+            data[key] = value
+    if data.get("contact_email"):
+        email = data["contact_email"].strip().lower().removeprefix("mailto:")
+        if not EMAIL_RE.fullmatch(email):
+            raise HTTPException(422, "Contact email must be a valid email address")
+        data["contact_email"] = email
     if {"has_careers_page", "careers_url", "open_jobs_count"} & data.keys():
         if data.get("careers_url"):
             careers_url = canonical_url(data["careers_url"])
@@ -210,6 +226,12 @@ def round_payload(data: dict[str, Any]) -> dict[str, Any]:
         data["currency"] = data["currency"].upper()
     if data.get("amount") is not None and data.get("amount_usd") is None and (data.get("currency") or "USD") == "USD":
         data["amount_usd"] = data["amount"]
+    if data.get("valuation_currency"):
+        data["valuation_currency"] = data["valuation_currency"].upper()
+    if data.get("valuation_usd") is not None and data.get("valuation") is None and "valuation" not in data:
+        data.update({"valuation": data["valuation_usd"], "valuation_currency": "USD"})
+    elif data.get("valuation") is not None and data.get("valuation_usd") is None and (data.get("valuation_currency") or "USD") == "USD":
+        data["valuation_usd"] = data["valuation"]
     if "investors" in data and data["investors"] is not None:
         data["investors"] = [item.strip() for item in data["investors"] if item and item.strip()][:50]
     return data

@@ -14,6 +14,7 @@ const ENRICH_TARGETS = [
   { value: "never", label: "Never enriched", hint: "Companies that have not been checked yet." },
   { value: "careers_unchecked", label: "Website known, careers not checked", hint: "Fastest way to mark careers pages." },
   { value: "missing_founded", label: "Missing or estimated founding date", hint: "Looks up YC profiles, Wikidata, and the website." },
+  { value: "missing_contacts", label: "Website known, no LinkedIn / X / email", hint: "Reads social profiles and a contact email from the site, YC, and Wikidata." },
   { value: "stale", label: "Enriched more than 30 days ago", hint: "Refreshes careers pages and open-job counts." },
   { value: "all", label: "All companies", hint: "Least recently enriched first." },
 ];
@@ -147,6 +148,9 @@ export default function ScraperView({ notify }: { notify: Notify }) {
           <CoverageCard label="With website" value={percent(coverage.with_website, coverage.total)} note={`${coverage.with_website.toLocaleString()} · ${coverage.website_verified.toLocaleString()} verified`} ratio={coverage.with_website / Math.max(1, coverage.total)} />
           <CoverageCard label="Careers page found" value={coverage.with_careers.toLocaleString()} note={`${coverage.careers_checked.toLocaleString()} checked · ${coverage.hiring.toLocaleString()} hiring`} ratio={coverage.careers_checked / Math.max(1, coverage.total)} />
           <CoverageCard label="Founding date" value={percent(coverage.founded_known, coverage.total)} note={`${coverage.founded_estimated.toLocaleString()} are estimates`} ratio={coverage.founded_known / Math.max(1, coverage.total)} />
+          {coverage.with_social !== undefined && (
+            <CoverageCard label="Profiles & email" value={percent(coverage.with_social, coverage.total)} note={`${(coverage.with_linkedin || 0).toLocaleString()} LinkedIn · ${(coverage.with_contact_email || 0).toLocaleString()} contact emails`} ratio={coverage.with_social / Math.max(1, coverage.total)} />
+          )}
           <CoverageCard label="Not enriched yet" value={coverage.never_enriched.toLocaleString()} note={`${coverage.website_not_found.toLocaleString()} searched, no site found`} />
         </div>
       )}
@@ -173,6 +177,7 @@ export default function ScraperView({ notify }: { notify: Notify }) {
             <span><strong>{active.websites_found.toLocaleString()}</strong> websites found</span>
             <span><strong>{active.careers_found.toLocaleString()}</strong> careers pages</span>
             <span><strong>{active.founded_found.toLocaleString()}</strong> founding dates</span>
+            {active.contacts_found !== undefined && <span><strong>{active.contacts_found.toLocaleString()}</strong> with new links</span>}
             {(active.progress?.errors || 0) > 0 && <span><strong>{active.progress.errors}</strong> errors</span>}
           </div>
           {active.log && active.log.length > 0 && <pre className="job-log">{active.log.slice(-14).join("\n")}</pre>}
@@ -308,7 +313,7 @@ export default function ScraperView({ notify }: { notify: Notify }) {
               <div><dt>Companies found / saved</dt><dd>{detail.companies_found.toLocaleString()} / {detail.companies_saved.toLocaleString()}</dd></div>
               <div><dt>Rounds found / saved</dt><dd>{detail.rounds_found.toLocaleString()} / {detail.rounds_saved.toLocaleString()}</dd></div>
               <div><dt>Enriched</dt><dd>{detail.enriched_count.toLocaleString()}</dd></div>
-              <div><dt>Found</dt><dd>{detail.websites_found} websites · {detail.careers_found} careers · {detail.founded_found} founding dates</dd></div>
+              <div><dt>Found</dt><dd>{detail.websites_found} websites · {detail.careers_found} careers · {detail.founded_found} founding dates{detail.contacts_found !== undefined ? ` · ${detail.contacts_found} with new links` : ""}</dd></div>
             </dl>
             {detail.error && <p className="form-error">{detail.error}</p>}
             <p className="field-label">Options</p>

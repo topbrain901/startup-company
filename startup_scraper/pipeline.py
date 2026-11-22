@@ -23,6 +23,7 @@ ENRICH_TARGETS = {
     "missing_website": "Missing website",
     "missing_founded": "Missing or estimated founding date",
     "careers_unchecked": "Website known, careers not checked",
+    "missing_contacts": "Website known, no LinkedIn / X / contact email yet",
     "stale": "Enriched more than 30 days ago",
     "all": "All companies",
 }
@@ -104,6 +105,10 @@ def select_enrichment_ids(
             f"or(enriched_at.is.null,enriched_at.lt.{retry_cutoff})",
         ],
         "careers_unchecked": ["website.not.is.null", "careers_checked_at.is.null"],
+        "missing_contacts": [
+            "website.not.is.null", "linkedin_url.is.null", "twitter_url.is.null", "contact_email.is.null",
+            f"or(enriched_at.is.null,enriched_at.lt.{retry_cutoff})",
+        ],
         "stale": [f"enriched_at.lt.{stale_cutoff}"],
         "all": [],
     }[target]
@@ -169,6 +174,7 @@ def run_enrichment(
                 counters["websites_found"] += int(result.website_found)
                 counters["careers_found"] += int(result.careers_found)
                 counters["founded_found"] += int(result.founded_found)
+                counters["contacts_found"] += int(result.contacts_found)
                 counters["errors"] += int(result.error is not None)
                 if on_result:
                     on_result(result)

@@ -23,6 +23,10 @@ const TEXT_FIELDS: Array<{ key: string; label: string; placeholder?: string; wid
   { key: "employee_count", label: "Team size" },
   { key: "careers_url", label: "Careers page URL", wide: true },
   { key: "open_jobs_count", label: "Open jobs" },
+  { key: "contact_email", label: "Contact email", placeholder: "hello@acme.com" },
+  { key: "linkedin_url", label: "LinkedIn page", placeholder: "linkedin.com/company/acme" },
+  { key: "twitter_url", label: "X / Twitter", placeholder: "@acme" },
+  { key: "github_url", label: "GitHub", placeholder: "github.com/acme" },
 ];
 const NUMBER_FIELDS = new Set(["founded_year", "employee_count", "open_jobs_count"]);
 const TRI_STATE_FIELDS = ["is_remote", "is_hiring", "has_careers_page"] as const;

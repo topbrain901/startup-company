@@ -8,6 +8,7 @@ from typing import Iterable
 
 from ..http import HttpClient
 from ..models import Company, FundingRound
+from ..places import place_from_news
 from ..util import clean_text, normalize_name, parse_date, stable_key
 
 
@@ -61,15 +62,16 @@ def _child_text(node: ET.Element, *names: str) -> str:
     return ""
 
 
-def _amount(text: str):
-    matches = list(AMOUNT_RE.finditer(text))
-    if not matches:
-        return None, None
-    funding_positions = [match.start() for match in re.finditer(r"\b(?:rais\w*|secur\w*|funding|financing|round)\b", text, re.I)]
-    match = min(
-        matches,
-        key=lambda item: min((abs(item.end() - position) for position in funding_positions), default=item.start()),
-    )
+VALUATION_AFTER_RE = re.compile(r"^\s*(?:post-money\s+|pre-money\s+)?valuation\b", re.I)
+VALUATION_BEFORE_RE = re.compile(
+    r"\b(?:valued\s+(?:it\s+|the\s+(?:company|startup|business)\s+)?at|valuing\s+(?:it|the\s+(?:company|startup|business))\s+at|"
+    r"valuation\s+(?:of|to|at))"
+    r"(?:\s+(?:about|around|roughly|nearly|almost|over|more\s+than|just\s+over|some|approximately|an\s+estimated))*\s*$",
+    re.I,
+)
+
+
+def _money(match: re.Match) -> tuple[float, str]:
     raw = match.group("number").replace(",", ".")
     value = float(raw)
     unit = match.group("unit").lower()
@@ -77,6 +79,33 @@ def _amount(text: str):
     symbol = match.group("currency").upper()
     currency = {"$": "USD", "US$": "USD", "USD": "USD", "£": "GBP", "€": "EUR", "CA$": "CAD", "C$": "CAD", "A$": "AUD", "AU$": "AUD"}.get(symbol, symbol)
     return value * multiplier, currency
+
+
+def _is_valuation(text: str, match: re.Match) -> bool:
+    """'$1B valuation', 'valued at $1B', 'valuation of $1B'."""
+    after = text[match.end() : match.end() + 30]
+    before = text[max(0, match.start() - 60) : match.start()]
+    return bool(VALUATION_AFTER_RE.match(after) or VALUATION_BEFORE_RE.search(before))
+
+
+def _amount(text: str):
+    """Size of the round: the amount nearest a funding word, never the valuation."""
+    matches = [match for match in AMOUNT_RE.finditer(text) if not _is_valuation(text, match)]
+    if not matches:
+        return None, None
+    funding_positions = [match.start() for match in re.finditer(r"\b(?:rais\w*|secur\w*|funding|financing|round)\b", text, re.I)]
+    match = min(
+        matches,
+        key=lambda item: min((abs(item.end() - position) for position in funding_positions), default=item.start()),
+    )
+    return _money(match)
+
+
+def _valuation(text: str):
+    for match in AMOUNT_RE.finditer(text):
+        if _is_valuation(text, match):
+            return _money(match)
+    return None, None
 
 
 DESCRIPTOR_PREFIX_RE = re.compile(
@@ -117,19 +146,64 @@ def _company_name(title: str) -> str | None:
     return name if 1 < len(name) <= 160 else None
 
 
+# Phrases that introduce investor names, up to the end of the sentence.
+INVESTOR_LEAD_RE = re.compile(
+    r"\b(?:co-?led\s+by|led\s+by|participation\s+(?:from|by)|joined\s+by|backed\s+by|"
+    r"investors?\s+(?:include|includes|including|such\s+as|like)|"
+    r"(?:existing|returning|new|other)\s+(?:backers?|investors?)(?:\s+(?:including|such\s+as|like))?|"
+    # "raised $5M from X", but never across "led by" / "participation" (those leads come first).
+    r"(?:rais\w*|secur\w*|clos\w*|land\w*|gets?|got|bags?|bagged)\s+(?:(?!led\s*by|participation)[^.;]){0,60}?\bfrom)"
+    # Some feeds drop the space after a line break ("led byWarsaw Equity").
+    r"(?:\s+|(?=[A-Z]))(?P<names>.+?)(?=[.;](?:\s|$)|$)",
+    re.I,
+)
+INVESTOR_CLAUSE_END_RE = re.compile(
+    r",?\s+(?:which|who|that|bringing|taking|marking|to|for|as|in\s+(?:a|an|the|its|\d{4})|after|amid|"
+    r"(?:also\s+)?(?:participated|joined|invested|contributed|took\s+part))\b.*$",
+    re.I,
+)
+# Longer connectors first: at a comma, ", with participation from" must win over ",".
+INVESTOR_SPLIT_RE = re.compile(
+    r",?\s+with\s+participation\s+(?:from|by)\s+|,?\s+joined\s+by\s+|,?\s+alongside\s+|,?\s+along\s+with\s+|"
+    r",?\s+as\s+well\s+as\s+|,?\s+plus\s+|,\s*(?:and\s+)?|\s+and\s+",
+    re.I,
+)
+INVESTOR_PREFIX_RE = re.compile(
+    r"^(?:(?:\S+-based|the|its|their|existing|returning|new|other|prior|previous|several|leading|notable|venture|vc|"
+    r"investors?|backers?|firms?|funds?|including|include|such\s+as|like|the\s+likes\s+of|participation\s+from)\s+)+",
+    re.I,
+)
+GENERIC_INVESTORS = {
+    "others", "other investors", "angel investors", "angels", "existing investors", "strategic investors",
+    "undisclosed investors", "a group of investors", "family offices", "individual investors", "investors",
+    "a number of angel investors", "several angel investors", "high-profile angels", "industry angels",
+}
+
+
 def _investors(text: str) -> list[str]:
     investors: list[str] = []
-    patterns = (
-        r"\bled by\s+(.+?)(?:,?\s+with participation|,?\s+joined by|[.;])",
-        r"\bparticipation from\s+(.+?)(?:[.;])",
-    )
-    for pattern in patterns:
-        for match in re.finditer(pattern, text, re.I):
-            value = clean_text(match.group(1))
-            for name in re.split(r",|\s+and\s+", value):
-                name = name.strip(" :'\"()")
-                if 1 < len(name) <= 120 and name.lower() not in {item.lower() for item in investors}:
-                    investors.append(name)
+    for match in INVESTOR_LEAD_RE.finditer(text):
+        value = INVESTOR_CLAUSE_END_RE.sub("", clean_text(match.group("names")))
+        for name in INVESTOR_SPLIT_RE.split(value):
+            name = re.sub(r"\s+(?:and|among)\s+others$", "", name.strip(" :'\""), flags=re.I)
+            name = INVESTOR_PREFIX_RE.sub("", name).strip(" :'\"")
+            # Drop only unbalanced brackets: keep "Warsaw Equity Group (WEG)".
+            while name.startswith("(") and name.count("(") > name.count(")"):
+                name = name[1:].strip()
+            while name.endswith(")") and name.count(")") > name.count("("):
+                name = name[:-1].strip()
+            if (
+                not name
+                or name.endswith(("..", "…"))  # cut off by a truncated feed summary
+                or name.lower() in GENERIC_INVESTORS
+                or not (name[0].isupper() or name[0].isdigit() or re.search(r"\d", name.split()[0]))
+                or not 1 < len(name) <= 80
+                or len(name.split()) > 8
+                or AMOUNT_RE.search(name)
+            ):
+                continue
+            if name.lower() not in {item.lower() for item in investors}:
+                investors.append(name)
     return investors[:25]
 
 
@@ -177,7 +251,9 @@ def collect(client: HttpClient, limit: int | None = None, feeds: tuple[Feed, ...
                 continue
             source_key = stable_key("news", link)
             amount, currency = _amount(combined)
+            valuation, valuation_currency = _valuation(combined)
             round_match = ROUND_RE.search(combined)
+            place = place_from_news(title, summary, name) or {}
             company = Company(
                 source_key=source_key,
                 source_name=feed.name,
@@ -186,6 +262,10 @@ def collect(client: HttpClient, limit: int | None = None, feeds: tuple[Feed, ...
                 name=name,
                 normalized_name=normalize_name(name),
                 description=summary[:4000] or None,
+                city=place.get("city"),
+                state=place.get("state"),
+                country=place.get("country"),
+                location=place.get("location") or None,
                 entity_kind="startup",
                 metadata={"article_title": title, "feed_url": feed.url, "article_url": link},
             )
@@ -199,7 +279,10 @@ def collect(client: HttpClient, limit: int | None = None, feeds: tuple[Feed, ...
                 amount=amount,
                 currency=currency,
                 amount_usd=amount if currency == "USD" else None,
-                investors=_investors(summary),
+                valuation=valuation,
+                valuation_currency=valuation_currency,
+                valuation_usd=valuation if valuation_currency == "USD" else None,
+                investors=_investors(f"{title}. {summary}"),
                 title=title,
                 summary=summary[:4000] or None,
                 metadata={"feed_url": feed.url, "amount_requires_verification": amount is not None},

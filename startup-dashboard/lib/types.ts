@@ -10,6 +10,9 @@ export type FundingRound = {
   amount: number | null;
   currency: string | null;
   amount_usd: number | null;
+  valuation: number | null;
+  valuation_currency: string | null;
+  valuation_usd: number | null;
   investors: string[];
   title: string | null;
   summary: string | null;
@@ -30,6 +33,7 @@ export type CompanyRow = {
   is_remote: boolean | null;
   industry: string | null;
   subindustry: string | null;
+  sectors: string[] | null;
   stage: string | null;
   status: string | null;
   entity_kind: string | null;
@@ -50,7 +54,13 @@ export type CompanyRow = {
   latest_round_on: string | null;
   latest_amount_usd: number | null;
   total_funding_usd: number | null;
+  latest_valuation_usd: number | null;
+  investors: string[] | null;
   round_count: number;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  github_url: string | null;
+  contact_email: string | null;
   source_name: string;
   source_url: string;
   logo_url: string | null;
@@ -86,6 +96,7 @@ export type Facets = {
   countries: FacetValue[];
   states: FacetValue[];
   industries: FacetValue[];
+  sectors: FacetValue[];
   stages: FacetValue[];
   statuses: FacetValue[];
   sources: FacetValue[];
@@ -119,6 +130,7 @@ export type Job = {
   websites_found: number;
   careers_found: number;
   founded_found: number;
+  contacts_found?: number;
   requested_by_email?: string | null;
   created_at?: string;
   started_at: string | null;
@@ -137,6 +149,11 @@ export type Coverage = {
   founded_known: number;
   founded_estimated: number;
   startups: number;
+  with_contact_email?: number;
+  with_linkedin?: number;
+  with_social?: number;
+  with_sector?: number;
+  with_investors?: number;
   by_source: Array<{ source: string; total: number; with_website: number }>;
 };
 

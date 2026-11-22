@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 Role = Literal["admin", "user"]
-EnrichTarget = Literal["never", "missing_website", "missing_founded", "careers_unchecked", "stale", "all"]
+EnrichTarget = Literal["never", "missing_website", "missing_founded", "careers_unchecked", "missing_contacts", "stale", "all"]
 EarlyStageType = Literal["pre-seed", "bootstrapped", "pre-funding", "ideation", "self-funded"]
 
 
@@ -48,10 +48,15 @@ class CompanyFields(BaseModel):
     careers_url: str | None = Field(default=None, max_length=500)
     has_careers_page: bool | None = None
     open_jobs_count: int | None = Field(default=None, ge=0, le=100_000)
+    linkedin_url: str | None = Field(default=None, max_length=300)
+    twitter_url: str | None = Field(default=None, max_length=300)
+    github_url: str | None = Field(default=None, max_length=300)
+    contact_email: str | None = Field(default=None, max_length=254)
 
     _strip = field_validator(
         "name", "website", "description", "location", "city", "state", "country", "industry",
-        "subindustry", "status", "stage", "accelerator_batch", "careers_url", mode="before",
+        "subindustry", "status", "stage", "accelerator_batch", "careers_url",
+        "linkedin_url", "twitter_url", "github_url", "contact_email", mode="before",
     )(_blank_to_none)
 
 
@@ -69,12 +74,17 @@ class FundingRoundFields(BaseModel):
     amount: float | None = Field(default=None, ge=0)
     currency: str | None = Field(default=None, max_length=8)
     amount_usd: float | None = Field(default=None, ge=0)
+    valuation: float | None = Field(default=None, ge=0)
+    valuation_currency: str | None = Field(default=None, max_length=8)
+    valuation_usd: float | None = Field(default=None, ge=0)
     investors: list[str] | None = None
     title: str | None = Field(default=None, max_length=500)
     summary: str | None = Field(default=None, max_length=10_000)
     source_url: str | None = Field(default=None, max_length=1000)
 
-    _strip = field_validator("round_type", "currency", "title", "summary", "source_url", mode="before")(_blank_to_none)
+    _strip = field_validator(
+        "round_type", "currency", "valuation_currency", "title", "summary", "source_url", mode="before"
+    )(_blank_to_none)
 
 
 class FundingRoundCreate(FundingRoundFields):

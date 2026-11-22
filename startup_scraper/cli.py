@@ -123,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"Enriched {counters['processed']}: {counters['websites_found']} websites found, "
             f"{counters['careers_found']} careers pages, {counters['founded_found']} founding dates, "
+            f"{counters['contacts_found']} with new links/contact email, "
             f"{counters['errors']} errors"
         )
     return 0

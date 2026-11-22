@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .careers import CareersDetector, CareersResult
-from .discovery import CompanyProfile, VerifiedSite, WebsiteDiscovery, score_page
+from .contacts import Contacts, contact_page_url, contacts_from_page, github_url, linkedin_url, twitter_url
+from .discovery import CompanyProfile, ProfileFacts, VerifiedSite, WebsiteDiscovery, score_page
 from .founding import (
     FoundedFact,
     about_page_url,
@@ -26,6 +27,15 @@ DEFAULT_USER_AGENT = "Mozilla/5.0 (compatible; FundingRadarBot/1.0)"
 SKIP_GUESSING_KINDS = {"investment_vehicle", "real_estate"}
 
 
+def profile_contacts(facts: ProfileFacts) -> Contacts:
+    """Social profiles a structured source (YC profile, Wikidata) lists for the company."""
+    return Contacts(
+        linkedin_url=linkedin_url(str(facts.extra.get("linkedin_url") or "")),
+        twitter_url=twitter_url(str(facts.extra.get("twitter_url") or "")),
+        github_url=github_url(str(facts.extra.get("github_url") or "")),
+    )
+
+
 @dataclass(slots=True)
 class EnrichmentResult:
     company_id: str
@@ -34,6 +44,7 @@ class EnrichmentResult:
     website_found: bool = False
     careers_found: bool = False
     founded_found: bool = False
+    contacts_found: bool = False
     error: str | None = None
 
 
@@ -87,11 +98,13 @@ class Enricher:
         website = original_website
         discovery_source = row.get("website_discovery_source")
         yc_jobs: tuple[int, str | None] | None = None
+        contacts = Contacts()
 
         # 1. Structured source profile (YC company page).
         if "ycombinator.com/companies/" in source_url:
             facts = self.discovery.yc_profile(source_url)
             if facts:
+                contacts.merge(profile_contacts(facts), "yc_profile")
                 if facts.founded_year:
                     founded_facts.append(FoundedFact(facts.founded_year, "yc_profile"))
                 if facts.jobs_count is not None:
@@ -118,6 +131,7 @@ class Enricher:
 
         # 3. Discover a website when none is known (or the known one is dead).
         wikidata_checked = False
+        wikidata_contacts: Contacts | None = None  # only trusted when Wikidata's website is this company's
         if "website" not in edited and (website is None or status == "unreachable") and within_budget():
             found: VerifiedSite | None = None
             how = None
@@ -149,6 +163,8 @@ class Enricher:
                     if facts.website:
                         found = self.discovery.verify(company, facts.website, threshold=3)
                         how = "wikidata" if found else None
+                        if found:
+                            wikidata_contacts = profile_contacts(facts)
             if not found and within_budget():
                 found = self.discovery.verify_best(company, self.discovery.brave_search(company), threshold=3)
                 how = "search_api" if found else None
@@ -189,6 +205,20 @@ class Enricher:
             ):
                 founded_facts.append(FoundedFact(facts.founded_year, "wikidata", facts.founded_on))
                 metadata_patch.update(facts.extra)
+                if facts.website and website and domain_from_url(facts.website) == domain_from_url(website):
+                    wikidata_contacts = profile_contacts(facts)
+
+        # Social profiles and a contact email: source profile first, then the site, then Wikidata.
+        if site is not None and within_budget():
+            contacts.merge(contacts_from_page(site.page, site.url, row["name"]), "website")
+            if not contacts.contact_email and within_budget():
+                contact_url = contact_page_url(site.page, site.url)
+                if contact_url:
+                    page, _ = self.discovery.load(contact_url)
+                    if page is not None:
+                        contacts.merge(contacts_from_page(page, site.url, row["name"]), "contact_page")
+        if wikidata_contacts:
+            contacts.merge(wikidata_contacts, "wikidata")
 
         if site is not None and within_budget():
             best_so_far = best(*founded_facts)
@@ -239,6 +269,13 @@ class Enricher:
                 patch.update({"founded_year": candidate.year, "founded_on": candidate.on, "founded_source": candidate.source})
                 result.founded_found = True
                 log.append(f"founded {candidate.year} ({candidate.source})")
+        # Found values replace old ones; a page that failed to load never blanks them.
+        found_contacts = {key: value for key, value in contacts.as_patch().items() if key not in edited}
+        if found_contacts:
+            new = {key: value for key, value in found_contacts.items() if row.get(key) != value}
+            patch.update(found_contacts)
+            result.contacts_found = bool(new)
+            log.append("links: " + ", ".join(f"{key.removesuffix('_url')} ({contacts.sources.get(key)})" for key in found_contacts))
         if metadata_patch:
             patch["metadata"] = {**metadata, **metadata_patch}
         return result

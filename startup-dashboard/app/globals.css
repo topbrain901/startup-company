@@ -408,6 +408,9 @@ a.badge.success:hover { background: var(--success-bg-hover); }
 .detail-grid dd small { display: block; margin-top: 4px; color: var(--text-4); font-size: 11px; font-weight: 500; }
 .detail-grid dd a { display: inline-flex; align-items: center; gap: 4px; color: var(--link); text-decoration: none; }
 .detail-grid .span-2 { grid-column: 1 / -1; }
+.detail-grid dd .link-list { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.detail-grid dd .link-list small { display: inline; margin: 0; }
+.detail-tags .sector { color: var(--link); background: var(--surface-muted); }
 .round-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 11px; }
 .round-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 13px; border-bottom: 1px solid var(--line-soft); }
 .round-list li:last-child { border-bottom: 0; }

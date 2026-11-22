@@ -18,7 +18,7 @@ from .supabase import SupabaseAPI, eq, in_filter
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 YesNo = Literal["", "yes", "no"]
-Sort = Literal["funded", "amount", "total", "added", "name", "founded_desc", "founded_asc", "team", "jobs"]
+Sort = Literal["funded", "amount", "total", "valuation", "added", "name", "founded_desc", "founded_asc", "team", "jobs"]
 EXPORT_LIMIT = 5000
 _facets_cache: tuple[float, Any] | None = None
 
@@ -31,11 +31,13 @@ def valid_id(value: str) -> str:
 
 
 def search_params(
-    q: str = Query("", max_length=200, description="Name, description, domain, location, or industry"),
+    q: str = Query("", max_length=200, description="Name, description, domain, location, industry, or investor"),
     location: str = Query("", max_length=120, description="City/state/country contains"),
     country: list[str] = Query(default=[]),
     state: list[str] = Query(default=[]),
     industry: list[str] = Query(default=[]),
+    sector: list[str] = Query(default=[], description="Cross-source sector, e.g. 'Fintech', 'AI & machine learning'"),
+    investor: str = Query("", max_length=120, description="Any recorded investor contains"),
     stage: list[str] = Query(default=[]),
     company_status: list[str] = Query(default=[], alias="status"),
     source: list[str] = Query(default=[]),
@@ -49,6 +51,8 @@ def search_params(
     website: YesNo = "",
     careers: Literal["", "yes", "no", "unchecked"] = "",
     hiring: YesNo = "",
+    email: YesNo = "",
+    linkedin: YesNo = "",
     viewed: YesNo = "",
     notes: YesNo = "",
     founded_known: YesNo = "",
@@ -58,6 +62,7 @@ def search_params(
     amount_max: float | None = Query(None, ge=0),
     total_min: float | None = Query(None, ge=0),
     total_max: float | None = Query(None, ge=0),
+    valuation_min: float | None = Query(None, ge=0, description="Most recent known valuation at least (USD)"),
     funded_within: int | None = Query(None, ge=1, le=36_500, description="Latest round within N days"),
     funded_after: date | None = None,
     funded_before: date | None = None,
@@ -70,12 +75,13 @@ def search_params(
 ) -> dict[str, Any]:
     params: dict[str, Any] = {
         "q": q.strip(), "location": location.strip(), "countries": country, "states": state,
-        "industries": industry, "stages": stage, "statuses": company_status, "sources": source,
+        "industries": industry, "sectors": sector, "investor": investor.strip(), "stages": stage, "statuses": company_status, "sources": source,
         "batches": batch, "kinds": kind, "round_types": round_type, "providers": provider,
         "website_statuses": website_status, "founded_sources": founded_source,
-        "remote": remote, "website": website, "careers": careers, "hiring": hiring, "viewed": viewed,
+        "remote": remote, "website": website, "careers": careers, "hiring": hiring, "email": email, "linkedin": linkedin, "viewed": viewed,
         "notes": notes, "founded_known": founded_known, "enriched": enriched, "min_jobs": min_jobs,
         "amount_min": amount_min, "amount_max": amount_max, "total_min": total_min, "total_max": total_max,
+        "valuation_min": valuation_min,
         "funded_after": funded_after.isoformat() if funded_after else None,
         "funded_before": funded_before.isoformat() if funded_before else None,
         "founded_from": founded_from, "founded_to": founded_to, "team_min": team_min, "team_max": team_max,
@@ -119,9 +125,19 @@ EXPORT_COLUMNS = (
     ("stage", "Stage"), ("status", "Status"), ("entity_kind", "Company type"), ("founded_year", "Founded"),
     ("founded_source", "Founded source"), ("latest_round_type", "Latest round"), ("latest_round_on", "Latest round date"),
     ("latest_amount_usd", "Latest amount (USD)"), ("total_funding_usd", "Total raised (USD)"),
-    ("employee_count", "Team size"), ("source_name", "Source"), ("source_url", "Source URL"),
+    ("latest_valuation_usd", "Latest valuation (USD)"), ("investors", "Investors"), ("sectors", "Sectors"),
+    ("employee_count", "Team size"), ("contact_email", "Contact email"), ("linkedin_url", "LinkedIn"),
+    ("twitter_url", "X / Twitter"), ("github_url", "GitHub"), ("source_name", "Source"), ("source_url", "Source URL"),
     ("viewed", "Viewed"), ("note", "My note"),
 )
+
+
+def csv_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return "; ".join(str(item) for item in value)
+    return value
 
 
 @router.get("/export", response_class=Response)
@@ -138,7 +154,7 @@ async def export_companies(
     writer = csv.writer(buffer)
     writer.writerow([label for _, label in EXPORT_COLUMNS])
     for row in result.get("rows") or []:
-        writer.writerow(["" if row.get(key) is None else row.get(key) for key, _ in EXPORT_COLUMNS])
+        writer.writerow([csv_value(row.get(key)) for key, _ in EXPORT_COLUMNS])
     filename = f"companies-{date.today().isoformat()}.csv"
     return Response(
         content="﻿" + buffer.getvalue(),  # BOM so Excel opens UTF-8 correctly

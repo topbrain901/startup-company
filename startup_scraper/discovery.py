@@ -344,6 +344,15 @@ class WebsiteDiscovery:
             if rank < 2:
                 continue
             facts = ProfileFacts(website=websites[0] if websites else None, extra={"wikidata_id": entity_id})
+            # LinkedIn company ID, X username, GitHub username.
+            for prop, key, prefix in (
+                ("P4264", "linkedin_url", "https://www.linkedin.com/company/"),
+                ("P2002", "twitter_url", "https://x.com/"),
+                ("P2037", "github_url", "https://github.com/"),
+            ):
+                value = next((_claim_value(claim) for claim in claims.get(prop, [])), None)
+                if isinstance(value, str) and value.strip():
+                    facts.extra[key] = prefix + value.strip()
             if isinstance(inception, dict):
                 facts.founded_year, facts.founded_on = _wikidata_time(inception)
             if best is None or rank > best[0]:
